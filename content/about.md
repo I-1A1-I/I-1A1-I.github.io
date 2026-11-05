@@ -1,4 +1,4 @@
-+++
+﻿+++
 title = "关于我"
 date = 2026-11-05T12:00:00+08:00
 draft = false
@@ -23,5 +23,5 @@ ShowReadingTime = false
 
 ## 联系
 
-- GitHub：<https://github.com/USERNAME>
-- 邮箱：your-email@example.com
+- GitHub：<https://github.com/I-1A1-I>
+- 邮箱：（通过 GitHub 联系）

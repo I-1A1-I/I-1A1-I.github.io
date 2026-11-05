@@ -1,4 +1,4 @@
-baseURL = "https://USERNAME.github.io/"
+baseURL = "https://i-1a1-i.github.io/"
 languageCode = "zh-cn"
 defaultContentLanguage = "zh"
 title = "0xNotes"
@@ -30,7 +30,7 @@ mainSections = ["posts"]
 
   [[params.socialIcons]]
     name = "github"
-    url = "https://github.com/USERNAME"
+    url = "https://github.com/I-1A1-I"
 
   [[params.socialIcons]]
     name = "rss"

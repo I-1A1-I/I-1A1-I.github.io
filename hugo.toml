@@ -13,7 +13,7 @@ mainSections = ["posts"]
 [params]
   env = "production"
   description = "安全学习笔记：Web 渗透、内网、漏洞复现"
-  author = "Valar"
+  author = "I-1A1-I"
   defaultTheme = "auto"
   ShowReadingTime = true
   ShowShareButtons = false
@@ -25,7 +25,7 @@ mainSections = ["posts"]
   ShowFullTextinRSS = false
 
   [params.homeInfoParams]
-    Title = "Hi，我是 Valar"
+    Title = "Hi，我是 I-1A1-I"
     Content = "这里记录我在安全方向的学习与实践：Web 渗透、内网、漏洞复现与靶场笔记。目前正在准备 CISP-PTS 之后的工作机会，欢迎交流。"
 
   [[params.socialIcons]]

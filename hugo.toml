@@ -1,0 +1,56 @@
+baseURL = "https://USERNAME.github.io/"
+languageCode = "zh-cn"
+defaultContentLanguage = "zh"
+title = "0xNotes"
+theme = "PaperMod"
+enableRobotsTXT = true
+summaryLength = 30
+mainSections = ["posts"]
+
+[pagination]
+  pagerSize = 20
+
+[params]
+  env = "production"
+  description = "安全学习笔记：Web 渗透、内网、漏洞复现"
+  author = "Valar"
+  defaultTheme = "auto"
+  ShowReadingTime = true
+  ShowShareButtons = false
+  ShowPostNavLinks = true
+  ShowBreadCrumbs = true
+  ShowCodeCopyButtons = true
+  ShowToc = true
+  TocOpen = false
+  ShowFullTextinRSS = false
+
+  [params.homeInfoParams]
+    Title = "Hi，我是 Valar"
+    Content = "这里记录我在安全方向的学习与实践：Web 渗透、内网、漏洞复现与靶场笔记。目前正在准备 CISP-PTS 之后的工作机会，欢迎交流。"
+
+  [[params.socialIcons]]
+    name = "github"
+    url = "https://github.com/USERNAME"
+
+  [[params.socialIcons]]
+    name = "rss"
+    url = "index.xml"
+
+[menu]
+  [[menu.main]]
+    identifier = "posts"
+    name = "文章"
+    url = "/posts/"
+    weight = 10
+
+  [[menu.main]]
+    identifier = "tags"
+    name = "标签"
+    url = "/tags/"
+    weight = 20
+
+  [[menu.main]]
+    identifier = "about"
+    name = "关于"
+    url = "/about/"
+    weight = 30

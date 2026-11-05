@@ -1,0 +1,8 @@
+public/
+resources/_gen/
+.hugo_build.lock
+.DS_Store
+Thumbs.db
+
+# 原稿备份不参与构建，但保留在仓库里
+# backup/

@@ -238,7 +238,7 @@
 
     该函数使用escapeHTML函数对用户输入内容进行处理![image-20261112030146856](xss/45.png)
 
-    <img src="46.png" alt="image-20261112030157979" style="zoom:67%;" />
+    <img src="xss/46.png" alt="image-20261112030157979" style="zoom:67%;" />
 
     而观察escapeHTML函数可以发现，它只会对字符串中的第一个<和第一个>进行替换，故在payload前添加<>即可绕过
 

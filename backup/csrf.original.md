@@ -1,4 +1,4 @@
-继续portswigger  Academy 的CSRF(跨站脚本攻击)
+继续portswigger  Academy 的CSRF(跨站请求伪造)
 
 1. #### CSRF vulnerability with no defenses
 

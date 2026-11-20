@@ -49,7 +49,7 @@ Clickjacking 利用的是“页面被嵌入 iframe 后，用户看不到真实�
 
 ![image-20261120170711667](05.png)
 
-注意 `my-account` 页面默认会带上当前用户的 `email` 参数，需要把它删掉，否则其他账号访问时会失败。
+注意 `my-account` 页面默认会带上当前用户的 `id` 参数，需要把它删掉，否则其他账号访问时会失败。
 
 ## 2. Clickjacking with form input data prefilled from a URL parameter
 

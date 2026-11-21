@@ -4,26 +4,25 @@ date = 2026-11-21T19:00:00+08:00
 draft = false
 tags = ["VulnHub", "DC-1", "渗透测试"]
 categories = ["渗透测试"]
-summary = "VulnHub DC-1 通关记录：Drupal 7 用户枚举、Drupalgeddon2 拿 shell、修改 admin 密码、清 flood 表、SUID find 提权，拿到 5 个 flag。"
+summary = "VulnHub DC-1 通关记录：Drupal 7 用户枚举、Drupalgeddon2 拿 shell、修改 admin 密码、清 flood 表、SUID find 提权，拿到最终 flag。"
 ShowToc = true
 TocOpen = false
 +++
 
-> 环境：VMware Workstation · 靶机：VulnHub DC-1（192.168.72.129）｜ 攻击机：Kali Linux（192.168.72.128）｜ 目标：拿到 5 个 flag 并提权到 root
+> 环境：VMware Workstation · 靶机：VulnHub DC-1（192.168.72.129）｜ 攻击机：Kali Linux（192.168.72.128）｜ 目标：从 Web 入口拿到 shell 并提权到 root
 
 ## 写在前面
 
-DC-1 是一台 Debian 7 + Drupal 7 的入门靶机，一共 5 个 flag。这篇按实际操作顺序记录：信息收集 → Drupal 用户枚举 → 爆破被拦 → Drupalgeddon2 拿 shell → 读配置文件和数据库 → 改 admin 密码登录后台 → SUID `find` 提权。
+DC-1 是一台 Debian 7 + Drupal 7 的入门靶机。这篇按实际操作顺序记录：信息收集 → Drupal 用户枚举 → 爆破被拦 → Drupalgeddon2 拿 shell → 读配置文件和数据库 → 改 admin 密码登录后台 → SUID `find` 提权。
 
 ## Flag 清单
 
-| # | 位置 | 说明 |
+| Flag | 位置 | 说明 |
 |---|---|---|
-| 1 | `/var/www/flag1.txt` | Web 根目录，提示找 CMS 配置文件 |
-| 2 | `/var/www/sites/default/settings.php` | 配置文件注释，同时泄露数据库凭据 |
-| 3 | Drupal 后台 Content | `flag3` 页面，提示 SUID 和 `find` |
-| 4 | `/home/flag4/flag4.txt` | 系统用户 flag4 的目录，提示最后 flag 在 root |
-| 5 | `/root/thefinalflag.txt` | 最终 flag |
+| flag1 | `/var/www/flag1.txt` | Web 根目录，提示找 CMS 配置文件 |
+| flag2 | `/var/www/sites/default/settings.php` | 配置文件注释，同时泄露数据库凭据 |
+| flag3 | Drupal 后台 Content | `flag3` 页面，提示 SUID 和 `find` |
+| final | `/root/thefinalflag.txt` | 最终 flag |
 
 ## 1. 信息收集
 
@@ -42,8 +41,6 @@ nmap -O -sV -A 192.168.72.129
 ```
 
 ![02.png](02.png)
-
-> `-A` 已经包含 `-O` 和 `-sV`，这里保留了实际操作时写全的命令，重复指定不影响结果。
 
 开放端口：
 
@@ -179,7 +176,7 @@ select * from users;
 Drupal 根目录下有个生成密码哈希的脚本：
 
 ```bash
-find ./ -name '*hash*'
+find ./ -name *hash*
 ```
 
 ![15.png](15.png)
@@ -267,7 +264,7 @@ delete from flood;
 Special PERMS will help FIND the passwd - but you'll need to -exec that command to work out how to get what's in the shadow.
 ```
 
-## 8. SUID find 提权（flag4 + final flag）
+## 8. SUID find 提权（final flag）
 
 flag3 提示看特殊权限，并且用 `find` 的 `-exec`。查找 root 的 SUID 文件：
 
@@ -286,17 +283,6 @@ find /etc/passwd -exec whoami \;
 ![28.png](28.png)
 
 输出 `root`，提权成功。
-
-顺便读系统用户目录下的第 4 个 flag：
-
-```bash
-find /etc/passwd -exec cat /home/flag4/flag4.txt \;
-```
-
-```text
-Can you use this same method to find or access the flag in root?
-Probably. But perhaps it's not that easy. Or maybe it is?
-```
 
 最后读 root 目录下的最终 flag：
 

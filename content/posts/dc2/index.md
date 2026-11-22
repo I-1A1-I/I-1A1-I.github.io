@@ -9,7 +9,7 @@ ShowToc = true
 TocOpen = false
 +++
 
-> 环境：VMware Workstation · 靶机：VulnHub DC-2（192.168.72.130）｜ 攻击机：Kali Linux（192.168.72.128）｜ 目标：从 WordPress 入口拿到 shell，绕过 rbash 并提权到 root
+> 环境：VMware Workstation · 靶机：VulnHub DC-2（192.168.72.130）｜ 攻击机：Kali Linux（192.168.72.128）｜ 目标：从 WordPress 入口拿到账号，SSH 进入后绕过 rbash 并提权到 root
 
 ## 写在前面
 
@@ -23,9 +23,9 @@ DC-2 是一台 WordPress 靶机，入口比较直接：Web 首页给 flag1，目
 |---|---|---|
 | flag1 | Web 首页 | hosts 绑定后访问站点即可看到 |
 | flag2 | WordPress 后台 | 登录后台后找到 |
-| flag3 | tom 的 SSH 环境 | rbash 限制下用 `vi` 读取 |
+| flag3 | `/home/tom/flag3.txt` | rbash 限制下用 `vi` 读取 |
 | flag4 | `/home/jerry/flag4.txt` | 切到 jerry 后找到 |
-| final | `/root` | `sudo git` 提权后拿到 |
+| final | `/root/final-flag.txt` | `sudo git` 提权后拿到 |
 
 ## 1. 信息收集
 
@@ -113,7 +113,7 @@ flag 中提到登录，但首页没有登录入口，所以用 `dirb` 做目录�
 
 ![20.png](20.png)
 
-找到了 flag3 的位置，但当前是 **rbash**，无法使用 `cat` 读取：
+在 tom 家目录看到 `flag3.txt`，但当前是 **rbash**，`cat` 不可用（command not found）：
 
 ![21.png](21.png)
 
@@ -123,19 +123,24 @@ flag 中提到登录，但首页没有登录入口，所以用 `dirb` 做目录�
 
 ## 7. vi 提权与 flag4
 
-使用 `vi` 进行提权：
+使用 `vi` 进行提权，在 vi 里执行：
+
+```bash
+:set shell=/bin/sh
+:shell
+```
 
 ![23.png](23.png)
 
 ![24.png](24.png)
 
-在 jerry 的路径下找到 `flag4.txt`：
+在 jerry 的家目录下找到 `flag4.txt`：
 
 ![25.png](25.png)
 
 ## 8. 切换 jerry 与 sudo git 提权
 
-根据 flag3 的提示需要更换账号，使用 `su` 切换到 `jerry`：
+根据 flag3 的提示需要更换账号。`vi` 的 shell 里 `su` 不在 PATH，先 `/bin/bash` 回到 tom 的 shell，再 `su jerry`：
 
 ![26.png](26.png)
 
@@ -143,11 +148,16 @@ flag 中提到登录，但首页没有登录入口，所以用 `dirb` 做目录�
 
 ![27.png](27.png)
 
-结合 flag4 尝试 git 提权。输入 `sudo -l` 可以看到可以无需密码使用 `git`：
+结合 flag4 尝试 git 提权。输入 `sudo -l` 可以看到 jerry 可以无需密码执行 `/usr/bin/git`：
 
 ![28.png](28.png)
 
 进行提权：
+
+```bash
+sudo git help config
+!/bin/bash
+```
 
 ![29.png](29.png)
 
@@ -155,6 +165,6 @@ flag 中提到登录，但首页没有登录入口，所以用 `dirb` 做目录�
 
 ![31.png](31.png)
 
-最后在 `/root` 中找到最终 flag：
+最后在 `/root/final-flag.txt` 中找到最终 flag：
 
 ![32.png](32.png)

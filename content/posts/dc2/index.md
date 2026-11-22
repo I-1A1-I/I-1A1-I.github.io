@@ -140,7 +140,7 @@ flag 中提到登录，但首页没有登录入口，所以用 `dirb` 做目录�
 
 ## 8. 切换 jerry 与 sudo git 提权
 
-根据 flag3 的提示需要更换账号。`vi` 的 shell 里 `su` 不在 PATH，先 `/bin/bash` 回到 tom 的 shell，再 `su jerry`：
+根据 flag3 的提示需要更换账号，直接使用 `su` 切换到 `jerry`：
 
 ![26.png](26.png)
 
